@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: "Student Portal"
+
+  #   Database config
+  datasource:
+    platform: postgres
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/studentPortal
+    username: postgres
+    password: postgres
+
+  # Hibernate config
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+      format_sql: false
+    show_sql: true
+
+  # Multipart config
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      enabled: true
+      max-request-size: 10MB
+
+  # Email config
+  mail:
+    host: smtp.gmail.com
+    port: '587'
+    username: 'tempgaurang@gmail.com'
+    password: 'vztvjucjgnfhhjgr'
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+logging:
+  level:
+    org:
+      hibernate: DEBUG
