@@ -36,13 +36,14 @@ public class JwtTokenValidatorFilter extends OncePerRequestFilter {
 
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws IOException {
-        System.out.println("STUDENT REPO: " + studentRepository);
         String jwtToken = request.getHeader(ApplicationConstant.JWT_HEADER);
         try {
-            if (jwtToken == null) {
+            if (jwtToken == null && !jwtToken.startsWith("Bearer")) {
                 sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Invalid token!!");
                 return;
             }
+
+            jwtToken = jwtToken.split(" ")[1];
 
             Environment env = getEnvironment();
             String jwtSecret = env.getProperty(ApplicationConstant.JWT_SECRET_KEY, ApplicationConstant.JWT_SECRET_DEFAULT);

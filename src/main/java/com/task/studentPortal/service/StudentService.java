@@ -124,9 +124,7 @@ public class StudentService {
     public ResponseEntity<?> updateProfile(UpdateProfileDto body, String email) {
         Student student = studentRepository.findByEmail(email)
                 .orElseThrow(() -> new AuthException("User not found."));
-        System.out.println(student.toString());
         modelMapper.map(body, student);
-        System.out.println(student.toString());
         return ResponseHandler.generateResponse(null, "Student update successfully.");
     }
 }

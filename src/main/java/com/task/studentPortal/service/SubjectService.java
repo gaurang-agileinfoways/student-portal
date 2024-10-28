@@ -22,7 +22,6 @@ public class SubjectService {
 
     public ResponseEntity<?> addSubject(CreateSubjectDto body) {
 
-        System.out.println(body);
         Optional<Subject> opSubject = subjectRepository.findByNameAndStandard(body.getName().trim().toLowerCase(), body.getStandard());
 
         if (opSubject.isPresent()) {
@@ -31,7 +30,6 @@ public class SubjectService {
 
         Subject sub = modelMapper.map(body, Subject.class);
         sub.setName(sub.getName().trim().toLowerCase());
-        System.out.println(sub);
         return ResponseHandler.generateResponse(subjectRepository.save(sub), "Subject added successfully.");
     }
 

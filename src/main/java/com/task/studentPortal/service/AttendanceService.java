@@ -87,16 +87,12 @@ public class AttendanceService {
         calendar.set(Calendar.DAY_OF_MONTH, 1);
         calendar.add(Calendar.MONTH, -1); // Move to last month
         Date startDate = calendar.getTime(); // Start of last month
-
-        System.out.println("StartDate: " + startDate);
-
+        
         // Set to the last day of last month
         calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
         Date endDate = calendar.getTime(); // End of last month
-        System.out.println("EndDate: " + endDate);
 
         Integer workingDays = CommonService.countWorkingDays(calendar);
-        System.out.println("Working days: " + workingDays);
         List<DBGetAttendanceCountDto> attendance = attendanceRepository.getAttendance(startDate, endDate);
 
         Set<MonthlyAttendance> monthlyAttendances = new HashSet<>();
