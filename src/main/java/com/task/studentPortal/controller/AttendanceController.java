@@ -26,5 +26,9 @@ public class AttendanceController {
         return attendanceService.addMyAttendance(userDetails.getId());
     }
 
+    @GetMapping("monthly")
+    public ResponseEntity<?> getMonthlyAttendance(@AuthenticationPrincipal StudentUserDetails userDetails) {
+        return attendanceService.getGetAttendance(userDetails.getId());
+    }
 
 }

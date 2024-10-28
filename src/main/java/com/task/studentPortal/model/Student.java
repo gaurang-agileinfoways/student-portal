@@ -40,7 +40,7 @@ public class Student {
     @Column(nullable = true, columnDefinition = "", unique = true)
     private String forgotPasswordToken;
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonManagedReference
     private Set<Mark> marks;
 }
