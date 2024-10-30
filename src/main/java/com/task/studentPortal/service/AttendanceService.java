@@ -19,9 +19,13 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.NotAcceptableStatusException;
 
+import java.sql.Timestamp;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -35,13 +39,15 @@ public class AttendanceService {
 
     public ResponseEntity<?> getMyAttendance(DateAttendanceDto body, Long id) {
 
-        System.out.println(body);
-        if (body.getStartDate() == null && body.getEndDate() == null) {
-            LocalDateTime startDateTime = LocalDateTime.now().withHour(12).withMinute(0).withSecond(0);
-            body.setStartDate(Date.from(startDateTime.atZone(ZoneId.systemDefault()).toInstant()));
+        if (body.getStartDate() == null || body.getEndDate() == null) {
+            LocalDateTime startDateTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+            Timestamp startDate = Timestamp.valueOf(startDateTime.atZone(ZoneId.systemDefault()).toLocalDateTime());
 
             LocalDateTime endDateTime = startDateTime.plusHours(24);
-            body.setEndDate(Date.from(endDateTime.atZone(ZoneId.systemDefault()).toInstant()));
+            Timestamp endDate = Timestamp.valueOf(endDateTime.atZone(ZoneId.systemDefault()).toLocalDateTime());
+
+            body.setStartDate(startDate);
+            body.setEndDate(endDate);
         }
 
         List<DBAttendanceDto> attendance = attendanceRepository.findByStartDateAndEndDate(body.getStartDate(), body.getEndDate(), id);
@@ -49,20 +55,25 @@ public class AttendanceService {
     }
 
     public ResponseEntity<?> addMyAttendance(Long id) {
-        LocalDateTime startDateTime = LocalDateTime.now().withHour(12).withMinute(0).withSecond(0);
-        Date startDate = Date.from(startDateTime.atZone(ZoneId.systemDefault()).toInstant());
+
+        LocalDateTime startDateTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        Timestamp startDate = Timestamp.valueOf(startDateTime.atZone(ZoneId.systemDefault()).toLocalDateTime());
+
+        // Check if today is Saturday or Sunday
+        DayOfWeek dayOfWeek = startDateTime.getDayOfWeek();
+        if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+            throw new NotAcceptableStatusException("Attendance cannot be added on weekends. ");
+        }
 
         LocalDateTime endDateTime = startDateTime.plusHours(24);
-        Date endDate = Date.from(endDateTime.atZone(ZoneId.systemDefault()).toInstant());
+        Timestamp endDate = Timestamp.valueOf(endDateTime.atZone(ZoneId.systemDefault()).toLocalDateTime());
 
         List<DBAttendanceDto> attendance = attendanceRepository.findByStartDateAndEndDate(startDate, endDate, id);
-
         if (!attendance.isEmpty()) {
             throw new AlreadyExistException("Attendance already added");
         }
 
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new AuthException("Student not found."));
+        Student student = studentRepository.findById(id).orElseThrow(() -> new AuthException("Student not found."));
 
         Attendance attend = new Attendance();
         attend.setDate(new Date());
@@ -72,8 +83,7 @@ public class AttendanceService {
     }
 
     public ResponseEntity<?> getGetAttendance(Long studentId) {
-        return ResponseHandler.generateResponse(
-                monthlyAttendanceRepository.findByStudentId(studentId), "Student attendance fetched.");
+        return ResponseHandler.generateResponse(monthlyAttendanceRepository.findByStudentId(studentId), "Student attendance fetched.");
     }
 
     // execute every month last date
@@ -81,29 +91,34 @@ public class AttendanceService {
 //    @Scheduled(cron = "0 * * * * *")
     private void attendanceMonthlySchedule() {
         Calendar calendar = Calendar.getInstance();
-        System.out.println("Calendar: " + calendar);
 
-        // Set to the first day of this month
+        // Set to the first day of the current month
         calendar.set(Calendar.DAY_OF_MONTH, 1);
         calendar.add(Calendar.MONTH, -1); // Move to last month
-        Date startDate = calendar.getTime(); // Start of last month
-        
+
+        // Get start of last month
+        LocalDateTime startLocalDateTime = LocalDateTime.of(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, // Months are 0-based in Calendar
+                1, 0, 0);
+        Timestamp startDate = Timestamp.valueOf(startLocalDateTime);
+
         // Set to the last day of last month
         calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
-        Date endDate = calendar.getTime(); // End of last month
 
+        // Get end of last month (end of the day)
+        LocalDateTime endLocalDateTime = LocalDateTime.of(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH), 23, 59, 59);
+        Timestamp endDate = Timestamp.valueOf(endLocalDateTime);
+
+        // Example for counting working days (assuming this method exists)
         Integer workingDays = CommonService.countWorkingDays(calendar);
-        List<DBGetAttendanceCountDto> attendance = attendanceRepository.getAttendance(startDate, endDate);
 
+       List<DBGetAttendanceCountDto> attendance = attendanceRepository.getAttendance(startDate, endDate);
+
+        System.out.println(attendance);
         Set<MonthlyAttendance> monthlyAttendances = new HashSet<>();
         for (DBGetAttendanceCountDto attendances : attendance) {
             long avg = (attendances.getAttendedDays() * 100) / workingDays;
 
-            System.out.println("student" + attendances);
-
-            String attendanceResult = avg > 90 && avg <= 100 ? "5*"
-                    : avg > 75 && avg <= 90 ? "4*"
-                    : avg > 29 && avg <= 75 ? "PASS" : "FAIL";
+            String attendanceResult = avg >= 90 && avg <= 100 ? "5*" : avg >= 75 && avg < 90 ? "4*" : avg >= 29 && avg < 75 ? "PASS" : "FAIL";
 
             Student s = studentRepository.findById(attendances.getStudentId()).orElseThrow(() -> new NotFoundException("Student not found"));
             MonthlyAttendance ma = new MonthlyAttendance(attendanceResult, workingDays, attendances.getAttendedDays(), startDate, endDate, s);
@@ -113,6 +128,4 @@ public class AttendanceService {
         monthlyAttendanceRepository.saveAll(monthlyAttendances);
         Logger.getLogger("Attendance Cron successfully.");
     }
-
-
 }

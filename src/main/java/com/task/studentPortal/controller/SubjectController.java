@@ -13,13 +13,13 @@ public class SubjectController {
 
     private SubjectService subjectService;
 
-    @PostMapping("/")
+    @PostMapping("")
     public ResponseEntity<?> addSubject(@RequestBody CreateSubjectDto body) {
         return subjectService.addSubject(body);
     }
 
-    @GetMapping("/")
-    public ResponseEntity<?> getSubject(@RequestBody CreateSubjectDto body) {
-        return subjectService.getSubject(body);
+    @GetMapping("")
+    public ResponseEntity<?> getSubject(@RequestParam(value = "standard", required = false) Integer standard) {
+        return subjectService.getSubject(standard);
     }
 }

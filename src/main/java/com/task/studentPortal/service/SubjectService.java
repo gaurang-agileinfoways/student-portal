@@ -33,8 +33,13 @@ public class SubjectService {
         return ResponseHandler.generateResponse(subjectRepository.save(sub), "Subject added successfully.");
     }
 
-    public ResponseEntity<?> getSubject(CreateSubjectDto body) {
-        List<Subject> subjects = subjectRepository.findAll();
+    public ResponseEntity<?> getSubject(Integer standard) {
+        List<Subject> subjects;
+        if (standard == null) {
+            subjects = subjectRepository.findAll();
+        } else {
+            subjects = subjectRepository.findByStandard(standard);
+        }
         return ResponseHandler.generateResponse(subjects, "Subject retrieved success.");
     }
 }

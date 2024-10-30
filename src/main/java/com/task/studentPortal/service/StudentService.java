@@ -66,6 +66,7 @@ public class StudentService {
         Student student = studentRepository.findByEnrollmentNumberOrEmail(body.getEnrollmentOrEmail(), body.getEnrollmentOrEmail())
                 .orElseThrow(() -> new AuthException("Invalid email or enrollment number."));
 
+        System.out.println(student);
         LoginResponseDto resp = modelMapper.map(student, LoginResponseDto.class);
         resp.setAccessToken(jwtTokenGenerator.generateToken(body, student));
         return ResponseHandler.generateResponse(resp, "Student login success.");
